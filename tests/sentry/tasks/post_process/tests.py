@@ -124,7 +124,7 @@ class PostProcessGroupTest(TestCase):
         with self.feature('projects:servicehooks'):
             post_process_group(
                 event=event,
-                is_new=True,
+                is_new=False,
                 is_regression=False,
                 is_sample=False,
             )
@@ -146,6 +146,34 @@ class PostProcessGroupTest(TestCase):
         mock_processor.return_value.apply.return_value = [
             (mock_callback, mock_futures),
         ]
+
+        hook = ServiceHook.objects.create(
+            project_id=self.project.id,
+            actor_id=self.user.id,
+            events=['event.alert'],
+        )
+
+        with self.feature('projects:servicehooks'):
+            post_process_group(
+                event=event,
+                is_new=False,
+                is_regression=False,
+                is_sample=False,
+            )
+
+        mock_process_service_hook.delay.assert_called_once_with(
+            hook_id=hook.id,
+            event=event,
+        )
+
+    @patch('sentry.tasks.servicehooks.process_service_hook')
+    @patch('sentry.rules.processor.RuleProcessor')
+    def test_service_hook_does_not_fire_without_alert(
+            self, mock_processor, mock_process_service_hook):
+        group = self.create_group(project=self.project)
+        event = self.create_event(group=group)
+
+        mock_processor.return_value.apply.return_value = []
 
         hook = ServiceHook.objects.create(
             project_id=self.project.id,
