@@ -1,6 +1,8 @@
 import React from 'react';
+import createReactClass from 'create-react-class';
 import Reflux from 'reflux';
 
+import SentryTypes from '../proptypes';
 import {fetchPlugins} from '../actionCreators/plugins';
 import PluginsStore from '../stores/pluginsStore';
 import ProjectState from '../mixins/projectState';
@@ -10,8 +12,12 @@ import ProjectState from '../mixins/projectState';
  * passes PluginsStore to component as `plugins`
  */
 const withPlugins = WrappedComponent =>
-  React.createClass({
+  createReactClass({
     displayName: 'withPlugins',
+    propTypes: {
+      organization: SentryTypes.Organization,
+      project: SentryTypes.Project,
+    },
     mixins: [ProjectState, Reflux.connect(PluginsStore, 'store')],
     componentDidMount() {
       let organization = this.props.organization || this.getOrganization();
